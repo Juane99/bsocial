@@ -10,6 +10,9 @@ create_curated_test_object <- function() {
   consortia <- readr::read_csv(consortia_path, show_col_types = FALSE)
   curated <- readr::read_csv(curated_path, show_col_types = FALSE)
 
+  # Rename unnamed first column to Consortia (CSV row names)
+  if (!"Consortia" %in% colnames(consortia)) colnames(consortia)[1] <- "Consortia"
+
   strain_cols <- setdiff(colnames(consortia), "Consortia")
   obj@cepas_seleccionadas <- strain_cols
   obj@datos_crudos <- list(
@@ -27,6 +30,9 @@ create_raw_test_object <- function() {
 
   consortia_path <- system.file("extdata", "consortia.csv", package = "bsocial")
   consortia <- readr::read_csv(consortia_path, show_col_types = FALSE)
+
+  # Rename unnamed first column to Consortia (CSV row names)
+  if (!"Consortia" %in% colnames(consortia)) colnames(consortia)[1] <- "Consortia"
 
   plates <- list()
   for (i in 1:6) {
