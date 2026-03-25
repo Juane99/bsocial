@@ -56,7 +56,7 @@ setMethod("calculate_growth_params", "bsocial", function(.Object, method = "grow
     }
     sc <- sc[pos, , drop = FALSE]
 
-    # Conversión consistente con v1
+    # Conversion consistent with v1
     ngen_vec <- sc$t_mid / 360
     ngen_vec[!is.finite(ngen_vec) | ngen_vec < 0] <- NA_real_
 
@@ -155,7 +155,7 @@ setMethod("calculate_growth_params", "bsocial", function(.Object, method = "grow
   # Incorporamos Consortia original y group_id
   growth_params <- dplyr::left_join(curve_map, growth_params, by = "curve_id")
 
-  # Mezclamos con consortia para añadir presencia/ausencia
+  # Merge with consortia to add presence/absence columns
   cons <- .Object@datos_crudos$consortia
   if (!is.null(cons) && is.data.frame(cons) && nrow(cons) > 0) {
     if (!"Consortia" %in% colnames(cons)) colnames(cons)[1] <- "Consortia"

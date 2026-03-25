@@ -53,7 +53,7 @@ setMethod("transform_curated_data", "bsocial", function(.Object) {
   curated$NGen <- suppressWarnings(as.numeric(curated$NGen))
   curated$GR <- suppressWarnings(as.numeric(curated$GR))
 
-  # Mantener solo métricas (evita colisiones si curated ya trae cepas)
+  # Keep only metric columns (avoid collisions if curated already has strain cols)
   curated2 <- curated[, c("Consortia", "LogPhase", "NGen", "GR"), drop = FALSE]
 
   final_df <- dplyr::left_join(cons, curated2, by = "Consortia")

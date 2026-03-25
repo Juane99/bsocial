@@ -32,7 +32,7 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
     stop("Invalid bg_type. Use 'blank' or 'threshold'.")
   }
 
-  # IDs válidos según consortia (columna Consortia preferente)
+  # Valid IDs from consortia (Consortia column preferred)
   valid_ids <- character(0)
   if (!is.null(cons) && is.data.frame(cons) && nrow(cons) > 0) {
     if ("Consortia" %in% colnames(cons)) {
@@ -49,7 +49,7 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
   preprocessed_list <- lapply(seq_along(plates), function(ii) {
     plate_df <- as.data.frame(plates[[ii]], stringsAsFactors = FALSE, check.names = FALSE)
 
-    # Limpieza de nombres: quitar "X" que R pueda poner delante de cabeceras numéricas
+    # Clean column names: remove "X" prefix R may add to numeric headers
     colnames(plate_df) <- gsub("^X", "", colnames(plate_df))
 
     # Columnas meta
@@ -80,17 +80,17 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
       stop("Plate ", ii, " has no valid data rows.")
     }
 
-    # Convertir a numérico preservando dimensiones
+    # Convert to numeric preserving dimensions
     mat_vals <- as.matrix(mat_vals)
     mat_vals <- suppressWarnings(apply(mat_vals, 2, function(x) as.numeric(as.character(x))))
 
-    # Recuperar dimensiones si apply() devolvió un vector (caso de 1 fila)
+    # Recover dimensions if apply() returned a vector (single-row case)
     if (is.null(dim(mat_vals))) {
       mat_vals <- matrix(mat_vals, nrow = 1, ncol = length(time_cols))
     }
     colnames(mat_vals) <- time_cols
 
-    # --- Corrección de fondo ---
+    # --- Background correction ---
     if (bg_type == "blank") {
       blank_id <- as.character(bg_param)
       pos_blank <- which(plate_df$SampleID == blank_id)
@@ -106,7 +106,7 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
         # Eliminamos los blanks
         plate_df <- plate_df[plate_df$SampleID != blank_id, , drop = FALSE]
       } else {
-        bsocial_log("WARN", "transform_raw_data(): no se encontró blank_id='", blank_id, "' en la placa ", ii)
+        bsocial_log("WARN", "transform_raw_data(): blank_id='", blank_id, "' not found in plate ", ii)
       }
 
     } else if (bg_type == "threshold") {
@@ -153,7 +153,7 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
   })
 
   # ------------------------------------------------------------
-  # Validación de columnas de tiempo (todas iguales)
+  # Validate time columns (must be identical across plates)
   # ------------------------------------------------------------
   time_cols_list <- lapply(preprocessed_list, function(df) {
     meta_cols <- c("WellID", "SampleID")
@@ -180,14 +180,14 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
   .Object@resultados_analisis$cycles <- as.numeric(ref_cols)
 
   # ------------------------------------------------------------
-  # Unir réplicas por grupo (alineando por SampleID)
+  # Merge replicates by group (aligned by SampleID)
   # ------------------------------------------------------------
   unique_groups <- unique(groups)
 
   nf <- vector("list", length(unique_groups))
   sd_by_group <- rep(NA_real_, length(unique_groups))
 
-  # Lista para guardar curvas individuales de cada réplica (para cálculo de CV)
+  # Store individual replicate curves for CV calculation
   individual_replicate_curves <- list()
 
   for (gi in seq_along(unique_groups)) {
@@ -202,14 +202,14 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
     if (length(common_ids) < length(all_ids)) {
       bsocial_log("WARN", "transform_raw_data(): grupo ", g,
                   " -> se descartan ", length(all_ids) - length(common_ids),
-                  " IDs que no están presentes en todas las réplicas.")
+                  " IDs not present in all replicates.")
     }
 
     if (length(common_ids) == 0) {
       stop("Group ", g, " has no common SampleIDs across its replicates.")
     }
 
-    # Orden estable según consortia (si existe)
+    # Stable order from consortia (if available)
     if (length(valid_ids) > 0) {
       common_ids <- valid_ids[valid_ids %in% common_ids]
     } else {
@@ -226,7 +226,7 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
       m
     })
 
-    # QC: SD entre réplicas (si hay más de 1)
+    # QC: SD across replicates (if more than 1)
     if (length(mats) > 1) {
       arr <- array(unlist(mats),
                    dim = c(nrow(mats[[1]]), ncol(mats[[1]]), length(mats)))
@@ -246,7 +246,7 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
     colnames(res) <- ref_cols
     nf[[gi]] <- res
 
-    # Guardar curvas individuales de cada réplica para cálculo de CV
+    # Store individual replicate curves for CV calculation
     for (rep_idx in seq_along(mats)) {
       rep_df <- as.data.frame(mats[[rep_idx]], check.names = FALSE)
       rownames(rep_df) <- common_ids
@@ -262,7 +262,8 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
   final_curves <- do.call(rbind, nf)
   colnames(final_curves) <- gsub("^X", "", colnames(final_curves))
 
-  # Mapa de IDs: curve_id (único) -> Consortia original + grupo
+
+  # ID map: curve_id (unique) -> original Consortia + group
   consortia_ids <- unlist(lapply(nf, rownames), use.names = FALSE)
   group_ids_rep <- rep(unique_groups, times = vapply(nf, nrow, integer(1)))
   curve_id <- make.unique(paste0(consortia_ids, "__g", group_ids_rep))
@@ -279,7 +280,7 @@ setMethod("transform_raw_data", "bsocial", function(.Object, groups, bg_type, bg
   .Object@resultados_analisis$replicate_sd_by_group <- stats::setNames(sd_by_group, unique_groups)
   .Object@resultados_analisis$replicate_sd_max <- if (all(is.na(sd_by_group))) NA_real_ else max(sd_by_group, na.rm = TRUE)
 
-  # Guardar curvas individuales de réplicas (para cálculo de CV en analyze_stability)
+  # Store individual replicate curves (for CV in analyze_stability)
   .Object@resultados_analisis$individual_replicate_curves <- dplyr::bind_rows(individual_replicate_curves)
 
   # Datos para el plot de curvas promediadas (por grupo)
