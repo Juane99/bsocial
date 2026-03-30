@@ -11,8 +11,8 @@ Provides an S4 class and methods for analyzing microbial social behavior in bact
 \seealso{
 Useful links:
 \itemize{
-  \item \url{https://github.com/Juane99/bsocial}
-  \item Report bugs at \url{https://github.com/Juane99/bsocial/issues}
+  \item \url{https://github.com/Juane99/bsocialv2}
+  \item Report bugs at \url{https://github.com/Juane99/bsocialv2/issues}
 }
 
 }

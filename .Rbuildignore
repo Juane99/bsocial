@@ -6,3 +6,6 @@
 ^cran-comments\.md$
 ^inst/test_full_flow\.R$
 ^CRAN-SUBMISSION$
+^submit_cran\.R$
+^\.claude$
+^\.idea$
